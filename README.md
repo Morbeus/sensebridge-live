@@ -50,6 +50,7 @@ Live **status badges**: Connected / Disconnected, participant count, Talking, Mo
 - **AI:** Google Gemini Live API (captions) + Gemini text/vision models (`@google/genai`)
 - **TTS:** Browser `SpeechSynthesis` (MVP-reliable; designed to be swapped for Gemini audio)
 - **Mic capture:** Web Audio API → 16 kHz PCM16 for the Live API
+- **Multi-device demos:** [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) (`cloudflared`) for a public HTTPS URL
 - **State:** In-memory rooms (hackathon MVP)
 
 ---
@@ -181,19 +182,75 @@ npm run build:server   # compile backend → server/dist
 
 ---
 
-## Multi-device demo (HTTPS tunnel)
+## Multi-device demo with Cloudflare Tunnel
 
-Mic/camera need HTTPS on phones. With `npm run dev` already running:
+Phones and tablets need **HTTPS** for mic/camera. SenseBridge uses a **Cloudflare quick tunnel** so any device can open the same public URL while the app still runs on your laptop.
+
+### Why Cloudflare?
+
+| Need | Why |
+|---|---|
+| HTTPS | Required by the browser for `getUserMedia` (mic / camera) |
+| Public URL | Judges / teammates can join from their phones without being on your Wi‑Fi |
+| One command | No Cloudflare account required for quick tunnels |
+
+Vite already proxies `/api` and `/ws` to the backend, so **one tunnel to port 5173** is enough.
+
+### Steps
+
+**1. Start the app locally**
+
+```bash
+npm run install:all
+cp .env.example server/.env   # add GEMINI_API_KEY, set USE_MOCK_LIVE=false for live Gemini
+npm run dev
+```
+
+Leave this running (frontend `http://localhost:5173`, backend `http://localhost:8080`).
+
+**2. Open a second terminal and start Cloudflare Tunnel**
 
 ```bash
 npm run tunnel
 ```
 
-Open the printed `https://….trycloudflare.com` URL on every device, join the **same room code**, pick different roles.
+That runs:
 
-Keep the tunnel terminal open for the whole demo. If you restart the tunnel, the URL changes.
+```bash
+npx --yes cloudflared tunnel --url http://localhost:5173
+```
 
-> Easiest demo: open **two browser tabs** (or two devices on the same Wi-Fi).
+**3. Copy the HTTPS URL**
+
+Look for a line like:
+
+```text
+https://random-words-here.trycloudflare.com
+```
+
+**4. Open that URL on every device**
+
+| Device | Role | Room |
+|---|---|---|
+| Laptop | Blind / Low-vision | `DEMO` |
+| Phone | Deaf / Hard-of-hearing | `DEMO` |
+| Optional tablet | Speech difficulty / Mute | `DEMO` |
+
+Allow mic (and camera for **Show your camera**). Keep the tunnel terminal open for the whole demo.
+
+### Notes
+
+- Restarting `npm run tunnel` **changes the URL** — share the new one with everyone.
+- No Cloudflare login is needed for trycloudflare.com quick tunnels.
+- For a stable custom hostname, use a named Cloudflare Tunnel tied to your zone (see [Cloudflare Tunnel docs](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/)).
+- Vite allows `*.trycloudflare.com` hosts via `server.allowedHosts` in `vite.config.ts`.
+- WebRTC voice usually works on the same network; captions and typed SpeakBack always go through the tunneled WebSocket.
+
+---
+
+## Hackathon demo flow
+
+> Easiest demo: two browser tabs on localhost, **or** multiple devices via the Cloudflare URL above.
 
 1. **Tab A — Blind user:** open the app, choose **Blind / Low-vision**, name yourself, enter room code `DEMO`, **Join**.
 2. **Tab B — Deaf user:** open the app, choose **Deaf / Hard-of-hearing**, enter the same code `DEMO`, **Join**. Both tabs now show **Connected · 1 other**.
