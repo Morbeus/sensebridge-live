@@ -2,7 +2,7 @@
 
 **A shared, real-time audio meeting room that bridges blind/low-vision and deaf/hard-of-hearing users, powered by the Google Gemini Live API.**
 
-Built for **Track 2: Real-Time Multimodal Interaction (Gemini Live API / Live Translate)**.
+Built for **Problem Statement 1: Real-Time Multimodal Interaction (Gemini Live API / Live Translate)**.
 
 ---
 
